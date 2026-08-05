@@ -1,0 +1,38 @@
+﻿# Python
+.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+**/.pytest_cache/
+.coverage
+htmlcov/
+# Environment
+.env
+**/.env
+!.env.example
+!**/.env.example
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+# Uploads
+uploads/
+backend/uploads/
+# Node / Next.js
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+dist/
+coverage/
+# Playwright
+playwright-report/
+test-results/
+**/playwright-report/
+**/test-results/
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
