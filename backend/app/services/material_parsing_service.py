@@ -15,6 +15,9 @@ class MaterialParsingService:
                 from docx import Document
                 text = "\n".join(paragraph.text for paragraph in Document(path).paragraphs).strip()
                 return ("pending_confirmation", {"extracted_text": text, "requires_manual_confirmation": True})
+            if suffix == ".txt":
+                text = path.read_text(encoding="utf-8").strip()
+                return ("pending_confirmation", {"extracted_text": text, "requires_manual_confirmation": True})
             if suffix in {".png", ".jpg", ".jpeg"}:
                 return ("pending_confirmation", {"extracted_text": None, "requires_manual_entry": True})
             return ("pending_confirmation", {"extracted_text": None, "requires_manual_entry": True})

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, dashboard, evidence, goals, growth, phase3, profile, tasks, timer
+from app.api.v1 import ai, auth, dashboard, evidence, goals, growth, phase3, profile, tasks, timer
 from app.core.config import get_settings
 from app.db.session import engine
 from sqlalchemy import text
@@ -35,3 +35,4 @@ app.include_router(evidence.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(growth.router, prefix=settings.api_prefix)
 app.include_router(phase3.router, prefix=settings.api_prefix)
+app.include_router(ai.router, prefix=settings.api_prefix)

@@ -10,7 +10,7 @@ from app.models.growth import AttributeEvidenceLink, GrowthEvidence, Material
 from app.schemas.growth import MaterialConfirmation
 from app.services.material_parsing_service import MaterialParsingService
 
-ALLOWED_SUFFIXES = {".pdf", ".docx", ".png", ".jpg", ".jpeg"}
+ALLOWED_SUFFIXES = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 ALLOWED_TYPES = {"transcript", "resume", "course_grade", "research", "internship", "competition", "project", "certificate", "other"}
 
 

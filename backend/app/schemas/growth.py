@@ -41,7 +41,7 @@ class RequirementInput(BaseModel):
     target_max: float | None = None
     unit: str | None = Field(default=None, max_length=40)
     importance: Literal["low", "medium", "high"] = "medium"
-    source_type: Literal["official", "user_input", "reference", "system_inference"]
+    source_type: Literal["official", "user_input", "supplied_document", "reference", "system_inference"]
     source_url: HttpUrl | None = None
     applicable_year: int | None = Field(default=None, ge=2000, le=2200)
     verification_status: Literal["pending", "confirmed", "outdated"] = "pending"
