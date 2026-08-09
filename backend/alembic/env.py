@@ -5,11 +5,12 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
+from app.db.database_url import configure_alembic_database_url
 from app.models import *  # noqa: F401,F403
 
 config = context.config
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+configure_alembic_database_url(config, settings.database_url)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
