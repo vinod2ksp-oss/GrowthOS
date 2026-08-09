@@ -14,6 +14,7 @@ export type Profile = {
   auxiliary_direction?: string | null;
   weekly_study_hours?: number | null;
   display_mode?: string | null;
+  resource_budget?: number | null;
 };
 
 export type Goal = {

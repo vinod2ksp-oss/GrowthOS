@@ -6,6 +6,7 @@ import type { Evaluation, Task, TimerSession } from '@/types';
 
 type AIFeedback = { summary: string; strengths: string[]; incomplete_parts: string[]; suggestions: string[]; followup_questions: string[] };
 type Followup = { id: string; question: string; answer: string | null; evaluation: string | null };
+type TaskResource = { resource_id: string; name: string; recommendation_reason: string; is_free: boolean };
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -19,6 +20,7 @@ export default function TasksPage() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [aiFeedback, setAiFeedback] = useState<AIFeedback | null>(null);
   const [followups, setFollowups] = useState<Followup[]>([]);
+  const [taskResources, setTaskResources] = useState<TaskResource[]>([]);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({
     title: '',
@@ -39,6 +41,11 @@ export default function TasksPage() {
   useEffect(() => {
     load().catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (!selected) { setTaskResources([]); return; }
+    apiRequest<TaskResource[]>(`/tasks/${selected.id}/resources`).then(setTaskResources).catch(() => setTaskResources([]));
+  }, [selected]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -111,6 +118,12 @@ export default function TasksPage() {
     const response = await apiRequest<{ status: string; items: Followup[] }>(`/tasks/${selected.id}/ai-followups`, { method: 'POST' });
     setFollowups(response.items);
     if (!response.items.length) setMessage('AI 当前不可用，追问未生成。');
+  }
+
+  async function markResourceUsed(resourceId: string) {
+    if (!selected) return;
+    await apiRequest(`/resources/${resourceId}/interactions`, { method: 'POST', body: JSON.stringify({ interaction_type: 'used_for_task', task_id: selected.id }) });
+    setMessage('已记录该资源用于当前任务；任务状态和能力值未改变。');
   }
 
   const filtered = tasks.filter((task) => filter === 'all' || task.status === filter || task.task_type === filter);
@@ -193,6 +206,7 @@ export default function TasksPage() {
           {evaluation ? <p className="mt-3 text-sm">评测：{evaluation.status}，{evaluation.reason}</p> : null}
           {aiFeedback ? <div className="mt-3 border-l-4 border-slate-500 p-3 text-sm"><p>{aiFeedback.summary}</p><p>做得好的地方：{aiFeedback.strengths.join('；') || '无'}</p><p>尚未完成：{aiFeedback.incomplete_parts.join('；') || '无'}</p><p>改进建议：{aiFeedback.suggestions.join('；') || '无'}</p></div> : null}
           {followups.length ? <div className="mt-3"><h4 className="font-semibold">理解追问</h4>{followups.map((item) => <p className="text-sm" key={item.id}>{item.question}</p>)}</div> : null}
+          <section className="mt-5 border-t pt-4"><h4 className="font-semibold">相关学习资源</h4>{taskResources.length === 0 ? <p className="text-sm text-gray-600">暂未找到与此任务直接匹配的资源。</p> : taskResources.map((item) => <article className="mt-2 border p-3" key={item.resource_id}><b>{item.name}</b><p className="text-sm">{item.recommendation_reason}</p><button className="mt-2 border px-3 py-1" onClick={() => markResourceUsed(item.resource_id)}>用于此任务</button></article>)}</section>
         </section>
       ) : null}
     </main>

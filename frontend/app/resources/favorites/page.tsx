@@ -1,0 +1,4 @@
+"use client";
+import Link from "next/link"; import { useEffect, useState } from "react"; import { apiRequest } from "@/lib/api";
+type Resource={id:string;name:string;product_type:string};
+export default function Favorites(){const[items,setItems]=useState<Resource[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");useEffect(()=>{apiRequest<Resource[]>("/resource-favorites").then(setItems).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[]);return <main className="mx-auto max-w-4xl p-6"><h1 className="text-2xl font-bold">我的收藏</h1>{loading?<p>加载中...</p>:error?<p className="text-red-600">{error}</p>:items.length===0?<p className="mt-4 text-gray-600">尚未收藏资源。</p>:items.map(item=><article className="mt-3 border p-4" key={item.id}><b>{item.name}</b><p>{item.product_type}</p><Link className="underline" href={`/resources/${item.id}`}>查看详情</Link></article>)}</main>}

@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test("optional AI layer preserves confirmation and rule-controlled workflow", async ({ page }) => {
   const email = `phase4-${Date.now()}@example.com`;
   await page.goto("/register");
+  await page.waitForLoadState("networkidle");
   const registerInputs = page.locator("form input");
   await registerInputs.nth(0).fill(email);
   await registerInputs.nth(1).fill("secret123");

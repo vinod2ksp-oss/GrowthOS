@@ -43,3 +43,13 @@ npm run dev
 
 - Alembic 默认管理迁移脚本。
 - 初始化数据库为空，执行 `alembic upgrade head` 后自动创建表结构。
+
+## 创建首个管理员
+
+管理员不能通过公开注册接口创建。先正常注册账号并完成数据库迁移，然后在后端目录使用项目虚拟环境执行：
+
+```powershell
+& 'D:\论文写作\demo\GROUTH\.venv\Scripts\python.exe' -m app.cli.set_admin user@example.com
+```
+
+命令只会提升已存在的精确邮箱账号；资源数据库初始为空，不包含预置商品。
