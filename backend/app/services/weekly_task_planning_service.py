@@ -11,10 +11,11 @@ from app.services.goal_gap_analysis_service import GoalGapAnalysisService
 
 
 class WeeklyTaskPlanningService:
-    def generate(self, db: Session, user_id: str, goal_id: str | None) -> WeeklyPlan:
+    def generate(self, db: Session, user_id: str, goal_id: str | None, review_id: str | None = None) -> WeeklyPlan:
         profile = db.execute(select(UserProfile).where(UserProfile.user_id == user_id)).scalar_one_or_none()
         budget = max(30, (profile.weekly_study_hours or 1) * 60)
         existing_titles = set(db.execute(select(Task.title).where(Task.user_id == user_id)).scalars().all())
+        existing_source_keys = set(db.execute(select(WeeklyPlanItem.source_key).join(WeeklyPlan, WeeklyPlan.id == WeeklyPlanItem.plan_id).where(WeeklyPlan.user_id == user_id, WeeklyPlan.status == "draft")).scalars().all())
         plan = WeeklyPlan(user_id=user_id, goal_id=goal_id)
         db.add(plan); db.flush()
         candidates: list[dict] = []
@@ -32,12 +33,16 @@ class WeeklyTaskPlanningService:
                 task_type = "main" if index == 0 else "support"
                 title = f"补充 {gap['title']} 的能力证据" if gap["gap_level"] == "unknown" else f"推进 {gap['title']}"
                 candidates.append(self._candidate(title, task_type, min(120, budget), "完成一次可核验的学习或信息补全过程。", "上传结果或更新确认信息", f"差距分析为 {gap['gap_level']}：{gap['next_step']}", f"requirement:{gap['requirement_id']}"))
+        if review_id:
+            unfinished = db.execute(select(Task).where(Task.user_id == user_id, Task.status.in_(["pending", "delayed"])).order_by(Task.created_at)).scalars().all()
+            for task in unfinished[:2]:
+                candidates.insert(0, self._candidate(f"继续：{task.title}", "support", min(task.estimated_minutes or 60, budget), task.completion_standard or "完成延续任务并更新状态。", task.evidence_requirements or "提交可核验结果", "上周任务尚未完成，保留目标并缩小为下周可执行项。", f"continue:{task.id}"))
         if profile is None or profile.weekly_study_hours is None:
             candidates.insert(0, self._candidate("确认当前每周可投入时间", "main", 30, "在个人档案中确认每周可投入小时数。", "更新后的个人档案", "缺少时间预算，无法可靠安排学习负荷。", "missing-time"))
         counts = {"main": 0, "support": 0, "challenge": 0}; used = 0
         for item in candidates:
             cap = {"main": 1, "support": 2, "challenge": 1}[item["task_type"]]
-            if item["title"] in existing_titles or counts[item["task_type"]] >= cap or used + item["estimated_minutes"] > budget: continue
+            if item["title"] in existing_titles or item["source_key"] in existing_source_keys or counts[item["task_type"]] >= cap or used + item["estimated_minutes"] > budget: continue
             db.add(WeeklyPlanItem(plan_id=plan.id, deadline=datetime.now(timezone.utc) + timedelta(days=7), **item))
             counts[item["task_type"]] += 1; used += item["estimated_minutes"]
         db.commit(); db.refresh(plan)

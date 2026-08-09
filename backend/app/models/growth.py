@@ -100,6 +100,7 @@ class WeeklyPlan(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    regeneration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class WeeklyPlanItem(Base):
@@ -116,3 +117,78 @@ class WeeklyPlanItem(Base):
     source_key: Mapped[str] = mapped_column(String(160), nullable=False)
     accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     task_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
+
+
+class EvidencePresentation(Base):
+    __tablename__ = "evidence_presentations"
+    evidence_id: Mapped[str] = mapped_column(String(36), ForeignKey("growth_evidences.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    user_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    hidden_from_current_goal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
+
+
+class TaskOutcomeLink(Base):
+    __tablename__ = "task_outcome_links"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    task_id: Mapped[str] = mapped_column(String(36), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    evaluation_id: Mapped[str] = mapped_column(String(36), ForeignKey("task_evaluations.id", ondelete="CASCADE"), nullable=False)
+    growth_evidence_id: Mapped[str] = mapped_column(String(36), ForeignKey("growth_evidences.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    __table_args__ = (UniqueConstraint("task_id", "evaluation_id", name="uq_task_outcome_evaluation"),)
+
+
+class AttributeChangeLog(Base):
+    __tablename__ = "attribute_change_logs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    attribute_id: Mapped[str] = mapped_column(String(36), ForeignKey("growth_attributes.id", ondelete="CASCADE"), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    source_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    previous_status: Mapped[str] = mapped_column(String(40), nullable=False)
+    new_status: Mapped[str] = mapped_column(String(40), nullable=False)
+    previous_score_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    previous_score_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    new_score_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    new_score_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    previous_confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    new_confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+
+
+class WeeklyReview(Base):
+    __tablename__ = "weekly_reviews"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    goal_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("study_goals.id", ondelete="SET NULL"), nullable=True)
+    period_start: Mapped[date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    effective_study_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pause_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    completed_task_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    effective_task_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    partial_task_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    delayed_abandoned_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    new_item_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    progress_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    __table_args__ = (UniqueConstraint("user_id", "period_start", "period_end", name="uq_weekly_review_period"),)
+
+
+class PathAdjustment(Base):
+    __tablename__ = "path_adjustments"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    weekly_review_id: Mapped[str] = mapped_column(String(36), ForeignKey("weekly_reviews.id", ondelete="CASCADE"), nullable=False)
+    adjustment_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    target_task_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    recommended_action: Mapped[str] = mapped_column(Text, nullable=False)
+    impact: Mapped[str] = mapped_column(Text, nullable=False)
+    requires_user_confirmation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

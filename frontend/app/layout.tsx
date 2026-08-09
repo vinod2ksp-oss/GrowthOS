@@ -22,6 +22,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/attributes">能力</Link>
             <Link href="/goal-analysis">差距</Link>
             <Link href="/weekly-plan">七日计划</Link>
+            <Link href="/inventory">背包</Link>
+            <Link href="/attribute-changes">变化</Link>
+            <Link href="/weekly-reviews">周结算</Link>
+            <Link href="/path-adjustments">路径调整</Link>
+            <Link href="/next-week">下周计划</Link>
             <Link className="ml-auto" href="/login">登录</Link>
             <Link href="/register">注册</Link>
           </nav>

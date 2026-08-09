@@ -58,3 +58,26 @@ class RequirementUpdate(BaseModel):
 
 class PlanConfirmation(BaseModel):
     accepted_item_ids: list[str] | None = None
+
+
+class TaskOutcomeInput(BaseModel):
+    outcome_type: Literal["diagnostic_completed", "learning_verified", "mistake_archive", "project_result", "task_result"]
+    attribute_key: ATTRIBUTE_KEYS | None = None
+
+
+class InventoryPreferenceInput(BaseModel):
+    user_note: str | None = Field(default=None, max_length=2000)
+    hidden_from_current_goal: bool = False
+
+
+class ReviewInput(BaseModel):
+    period_start: date
+    goal_id: str | None = None
+
+
+class PlanItemUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    estimated_minutes: int | None = Field(default=None, ge=15)
+    completion_standard: str | None = None
+    evidence_requirements: str | None = None
+    accepted: bool | None = None

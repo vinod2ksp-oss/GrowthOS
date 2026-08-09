@@ -112,4 +112,4 @@ def test_alembic_upgrade_head_on_fresh_database(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     with sqlite3.connect(database) as connection:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    assert tables == {"alembic_version", "users", "user_profiles", "study_goals", "tasks", "learning_sessions", "evidences", "task_evaluations", "materials", "growth_evidences", "growth_attributes", "attribute_evidence_links", "goal_requirements", "weekly_plans", "weekly_plan_items"}
+    assert tables == {"alembic_version", "users", "user_profiles", "study_goals", "tasks", "learning_sessions", "evidences", "task_evaluations", "materials", "growth_evidences", "growth_attributes", "attribute_evidence_links", "goal_requirements", "weekly_plans", "weekly_plan_items", "evidence_presentations", "task_outcome_links", "attribute_change_logs", "weekly_reviews", "path_adjustments"}

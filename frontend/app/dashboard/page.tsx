@@ -1,39 +1,4 @@
 "use client";
-
-import { useEffect, useState } from 'react';
-import { apiRequest, clearStoredToken } from '@/lib/api';
-import { useRouter } from 'next/navigation';
-
-export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await apiRequest<{ id: string; email: string }>('/me');
-        setUser(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败');
-      }
-    }
-    load();
-  }, []);
-
-  async function logout() {
-    clearStoredToken();
-    router.replace('/login');
-  }
-
-  return (
-    <main className="p-6">
-      <div className="rounded border bg-white p-4">
-        <h1 className="text-2xl font-bold">宿主面板</h1>
-        {error ? <div className="mt-3 text-red-600">{error}</div> : null}
-        {user ? <div className="mt-3">当前用户：{user.email}</div> : null}
-        <button className="mt-4 rounded bg-slate-900 px-4 py-2 text-white" onClick={logout}>退出登录</button>
-      </div>
-    </main>
-  );
-}
+import{useEffect,useState}from'react';import{apiRequest,clearStoredToken}from'@/lib/api';import{useRouter}from'next/navigation';import{useModeLabels}from'@/lib/useModeLabels';
+type Data={weekly_completion:number|null;recent_items:{id:string;name:string}[];recent_attribute_changes:{id:string;reason:string}[];current_risks:string[];next_review_date:string|null;pending_plan_count:number;data_source:string};
+export default function Dashboard(){const router=useRouter();const labels=useModeLabels();const[data,setData]=useState<Data|null>(null);const[error,setError]=useState('');useEffect(()=>{apiRequest<Data>('/growth-dashboard').then(setData).catch(e=>setError(e.message))},[]);return <main className="mx-auto max-w-6xl p-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">GrowthOS</h1><button className="border px-3 py-2" onClick={()=>{clearStoredToken();router.replace('/login')}}>退出登录</button></div>{error?<p className="text-red-600">{error}</p>:!data?<p>加载中...</p>:<><p className="text-sm text-gray-600">数据来源：{data.data_source}</p><div className="mt-4 grid gap-4 md:grid-cols-3"><section className="border p-4"><h2 className="font-semibold">本周完成度</h2><p>{data.weekly_completion===null?'尚无可计算周结算':`${Math.round(data.weekly_completion*100)}%`}</p></section><section className="border p-4"><h2 className="font-semibold">下一次结算时间</h2><p>{data.next_review_date||'首次结算尚未生成'}</p></section><section className="border p-4"><h2 className="font-semibold">待确认计划</h2><p>{data.pending_plan_count} 个</p></section><section className="border p-4"><h2 className="font-semibold">最近{labels.acquired}</h2>{data.recent_items.length?data.recent_items.map(x=><p key={x.id}>{x.name}</p>):<p>暂无新增成果</p>}</section><section className="border p-4"><h2 className="font-semibold">最近{labels.changes}</h2>{data.recent_attribute_changes.length?data.recent_attribute_changes.map(x=><p key={x.id} className="text-sm">{x.reason}</p>):<p>暂无变化</p>}</section><section className="border p-4"><h2 className="font-semibold">当前风险</h2>{data.current_risks.length?data.current_risks.map(x=><p key={x}>{x}</p>):<p>尚无有依据的风险</p>}</section></div></>}</main>}

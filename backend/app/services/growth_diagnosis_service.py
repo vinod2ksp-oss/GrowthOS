@@ -1,30 +1,36 @@
-from sqlalchemy import delete, func, select
+from datetime import date
+
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models.growth import AttributeEvidenceLink, GrowthAttribute, GrowthEvidence
+from app.models.growth import AttributeChangeLog, AttributeEvidenceLink, GrowthAttribute, GrowthEvidence
 from app.models.task import LearningSession, Task
 
 ATTRIBUTE_KEYS = ["mathematical_foundation", "english", "professional_knowledge", "academic_research", "data_analysis", "practical_experience", "programming_tools", "communication", "task_execution", "learning_stability"]
 
 
 class GrowthDiagnosisService:
-    def diagnose(self, db: Session, user_id: str) -> list[dict]:
-        evidences = db.execute(select(GrowthEvidence).where(GrowthEvidence.user_id == user_id, GrowthEvidence.verification_status.in_(["user_confirmed", "system_verified"]))).scalars().all()
+    def diagnose(self, db: Session, user_id: str, source_type: str = "manual_recalculation", source_id: str | None = None) -> list[dict]:
+        evidences = db.execute(select(GrowthEvidence).where(GrowthEvidence.user_id == user_id, GrowthEvidence.verification_status.in_(["user_confirmed", "system_verified"]), or_(GrowthEvidence.valid_until.is_(None), GrowthEvidence.valid_until >= date.today()))).scalars().all()
         result = []
         for key in ATTRIBUTE_KEYS:
             linked = [e for e in evidences if self._supports(e, key)]
             ratios = [e.metadata_json["score"] / e.metadata_json["full_score"] for e in linked if e.evidence_type == "course_grade" and e.metadata_json and e.metadata_json.get("course_category") == key and e.metadata_json.get("full_score", 0) > 0]
-            status, low, high, explanation = self._assessment(key, linked, ratios, db, user_id)
+            status, low, high, explanation = self._assessment(key, [e for e in linked if not (e.metadata_json or {}).get("confidence_only")], ratios, db, user_id)
             confidence = min(1.0, len(linked) * 0.2 + len(ratios) * 0.15)
             attribute = db.execute(select(GrowthAttribute).where(GrowthAttribute.user_id == user_id, GrowthAttribute.attribute_key == key)).scalar_one_or_none()
             if attribute is None:
                 attribute = GrowthAttribute(user_id=user_id, attribute_key=key, explanation=explanation)
                 db.add(attribute); db.flush()
+            previous = (attribute.current_status, attribute.range_min, attribute.range_max, attribute.confidence)
             attribute.current_status, attribute.range_min, attribute.range_max = status, low, high
             attribute.confidence, attribute.explanation = confidence, explanation
             db.execute(delete(AttributeEvidenceLink).where(AttributeEvidenceLink.attribute_id == attribute.id))
             for evidence in linked:
                 db.add(AttributeEvidenceLink(attribute_id=attribute.id, evidence_id=evidence.id))
+            current = (status, low, high, confidence)
+            if previous != current:
+                db.add(AttributeChangeLog(user_id=user_id, attribute_id=attribute.id, source_type=source_type, source_id=source_id, previous_status=previous[0], new_status=status, previous_score_min=previous[1], previous_score_max=previous[2], new_score_min=low, new_score_max=high, previous_confidence=previous[3], new_confidence=confidence, reason=explanation))
             result.append({"attribute_key": key, "current_status": status, "range_min": low, "range_max": high, "confidence": confidence, "evidence_count": len(linked), "evidence_ids": [e.id for e in linked], "explanation": explanation, "gap_status": attribute.gap_status})
         db.commit()
         return result

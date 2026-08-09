@@ -10,6 +10,9 @@ export default function TasksPage() {
   const [filter, setFilter] = useState('all');
   const [timer, setTimer] = useState<TimerSession | null>(null);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidenceType, setEvidenceType] = useState('result');
+  const [outcomeType, setOutcomeType] = useState('learning_verified');
+  const [attributeKey, setAttributeKey] = useState('mathematical_foundation');
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({
@@ -62,11 +65,23 @@ export default function TasksPage() {
     if (!selected || !evidenceFile) return;
     const body = new FormData();
     body.set('task_id', selected.id);
-    body.set('evidence_type', 'result');
+    body.set('evidence_type', evidenceType);
     body.set('description', '任务成果');
     body.set('file', evidenceFile);
     await apiRequest('/evidences', { method: 'POST', body });
     setMessage('证据已上传');
+  }
+
+  async function completeTask() {
+    if (!selected) return;
+    const updated = await apiRequest<Task>(`/tasks/${selected.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'done' }) });
+    setSelected(updated); await load(); setMessage('任务已标记完成');
+  }
+
+  async function convertOutcome() {
+    if (!selected) return;
+    await apiRequest(`/tasks/${selected.id}/outcome`, { method: 'POST', body: JSON.stringify({ outcome_type: outcomeType, attribute_key: attributeKey || null }) });
+    setMessage('任务成果已转化为背包物品');
   }
 
   async function evaluate(method: 'POST' | 'GET') {
@@ -141,11 +156,14 @@ export default function TasksPage() {
             <button type="button" className="rounded border px-3 py-2" onClick={() => timerAction('end')} disabled={!timer || Boolean(timer.end_time)}>结束</button>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
+            <select aria-label="成果证据类型" className="rounded border px-2 py-2" value={evidenceType} onChange={e=>setEvidenceType(e.target.value)}><option value="result">成果证据</option><option value="test">测试证据</option></select>
             <input type="file" accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.ppt,.pptx,.txt" onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)} />
             <button type="button" className="rounded border px-3 py-2" onClick={uploadEvidence} disabled={!evidenceFile}>上传证据</button>
             <button type="button" className="rounded border px-3 py-2" onClick={() => evaluate('POST')}>提交评测</button>
             <button type="button" className="rounded border px-3 py-2" onClick={() => evaluate('GET')}>查询结果</button>
+            <button type="button" className="rounded border px-3 py-2" onClick={completeTask}>标记任务完成</button>
           </div>
+          <div className="mt-3 flex flex-wrap gap-2"><select aria-label="成果转化类型" className="border px-2" value={outcomeType} onChange={e=>setOutcomeType(e.target.value)}><option value="learning_verified">已验证学习成果</option><option value="diagnostic_completed">诊断报告</option><option value="mistake_archive">错题档案</option><option value="project_result">项目成果</option></select><select aria-label="关联能力维度" className="border px-2" value={attributeKey} onChange={e=>setAttributeKey(e.target.value)}><option value="mathematical_foundation">数学基础</option><option value="english">英语</option><option value="professional_knowledge">专业知识</option><option value="programming_tools">编程工具</option><option value="data_analysis">数据分析</option></select><button type="button" className="border px-3 py-2" onClick={convertOutcome}>转化任务成果</button></div>
           {message ? <p className="mt-3 text-sm text-green-700">{message}</p> : null}
           {evaluation ? <p className="mt-3 text-sm">评测：{evaluation.status}，{evaluation.reason}</p> : null}
         </section>
