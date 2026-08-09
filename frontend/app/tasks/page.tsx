@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
 import type { Evaluation, Task, TimerSession } from '@/types';
 
+type AIFeedback = { summary: string; strengths: string[]; incomplete_parts: string[]; suggestions: string[]; followup_questions: string[] };
+type Followup = { id: string; question: string; answer: string | null; evaluation: string | null };
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selected, setSelected] = useState<Task | null>(null);
@@ -14,6 +17,8 @@ export default function TasksPage() {
   const [outcomeType, setOutcomeType] = useState('learning_verified');
   const [attributeKey, setAttributeKey] = useState('mathematical_foundation');
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [aiFeedback, setAiFeedback] = useState<AIFeedback | null>(null);
+  const [followups, setFollowups] = useState<Followup[]>([]);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({
     title: '',
@@ -90,6 +95,24 @@ export default function TasksPage() {
     setEvaluation(await apiRequest<Evaluation>(`/tasks/${selected.id}/evaluations${suffix}`, { method }));
   }
 
+  async function requestAIFeedback() {
+    if (!selected) return;
+    try {
+      const response = await apiRequest<{ analysis: { result_json: AIFeedback } | null }>(`/tasks/${selected.id}/ai-feedback`, { method: 'POST' });
+      if (response.analysis) setAiFeedback(response.analysis.result_json);
+      else setMessage('AI 当前不可用，规则评测结果不受影响。');
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : 'AI 当前不可用');
+    }
+  }
+
+  async function requestFollowups() {
+    if (!selected) return;
+    const response = await apiRequest<{ status: string; items: Followup[] }>(`/tasks/${selected.id}/ai-followups`, { method: 'POST' });
+    setFollowups(response.items);
+    if (!response.items.length) setMessage('AI 当前不可用，追问未生成。');
+  }
+
   const filtered = tasks.filter((task) => filter === 'all' || task.status === filter || task.task_type === filter);
 
   return (
@@ -161,11 +184,15 @@ export default function TasksPage() {
             <button type="button" className="rounded border px-3 py-2" onClick={uploadEvidence} disabled={!evidenceFile}>上传证据</button>
             <button type="button" className="rounded border px-3 py-2" onClick={() => evaluate('POST')}>提交评测</button>
             <button type="button" className="rounded border px-3 py-2" onClick={() => evaluate('GET')}>查询结果</button>
+            <button type="button" className="rounded border px-3 py-2" onClick={requestAIFeedback} disabled={!evaluation}>AI 深度反馈</button>
+            <button type="button" className="rounded border px-3 py-2" onClick={requestFollowups}>AI 追问</button>
             <button type="button" className="rounded border px-3 py-2" onClick={completeTask}>标记任务完成</button>
           </div>
           <div className="mt-3 flex flex-wrap gap-2"><select aria-label="成果转化类型" className="border px-2" value={outcomeType} onChange={e=>setOutcomeType(e.target.value)}><option value="learning_verified">已验证学习成果</option><option value="diagnostic_completed">诊断报告</option><option value="mistake_archive">错题档案</option><option value="project_result">项目成果</option></select><select aria-label="关联能力维度" className="border px-2" value={attributeKey} onChange={e=>setAttributeKey(e.target.value)}><option value="mathematical_foundation">数学基础</option><option value="english">英语</option><option value="professional_knowledge">专业知识</option><option value="programming_tools">编程工具</option><option value="data_analysis">数据分析</option></select><button type="button" className="border px-3 py-2" onClick={convertOutcome}>转化任务成果</button></div>
           {message ? <p className="mt-3 text-sm text-green-700">{message}</p> : null}
           {evaluation ? <p className="mt-3 text-sm">评测：{evaluation.status}，{evaluation.reason}</p> : null}
+          {aiFeedback ? <div className="mt-3 border-l-4 border-slate-500 p-3 text-sm"><p>{aiFeedback.summary}</p><p>做得好的地方：{aiFeedback.strengths.join('；') || '无'}</p><p>尚未完成：{aiFeedback.incomplete_parts.join('；') || '无'}</p><p>改进建议：{aiFeedback.suggestions.join('；') || '无'}</p></div> : null}
+          {followups.length ? <div className="mt-3"><h4 className="font-semibold">理解追问</h4>{followups.map((item) => <p className="text-sm" key={item.id}>{item.question}</p>)}</div> : null}
         </section>
       ) : null}
     </main>

@@ -27,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/weekly-reviews">周结算</Link>
             <Link href="/path-adjustments">路径调整</Link>
             <Link href="/next-week">下周计划</Link>
+            <Link href="/ai-settings">AI 设置</Link>
             <Link className="ml-auto" href="/login">登录</Link>
             <Link href="/register">注册</Link>
           </nav>

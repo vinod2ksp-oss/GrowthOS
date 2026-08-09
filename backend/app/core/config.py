@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     upload_dir: str = "./storage"
     max_upload_size: int = 5 * 1024 * 1024
     allowed_upload_extensions: str = ".png,.jpg,.jpeg,.pdf,.doc,.docx,.ppt,.pptx,.txt"
+    ai_api_key: str | None = None
+    ai_base_url: str = "https://api.openai.com/v1"
+    ai_model: str = ""
+    ai_timeout_seconds: float = 20
+    ai_max_retries: int = 2
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
