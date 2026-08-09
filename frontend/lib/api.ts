@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000/api/v1';
+const configuredApiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = configuredApiBase || (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000/api/v1' : '');
 
 export type ApiError = {
   detail?: string;
@@ -19,6 +20,7 @@ function buildHeaders(token?: string, extra?: HeadersInit, hasFormData = false):
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (!API_BASE) throw new Error('NEXT_PUBLIC_API_URL is required in production');
   const token = getStoredToken();
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
