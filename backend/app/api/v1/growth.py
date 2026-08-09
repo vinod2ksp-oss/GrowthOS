@@ -113,8 +113,8 @@ def plan_response(db: Session, plan) -> dict:
 
 
 @router.post("/weekly-plans", status_code=201)
-def generate_plan(goal_id: str | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
-    try: return plan_response(db, WeeklyTaskPlanningService().generate(db, user.id, goal_id))
+def generate_plan(goal_id: str | None = None, review_id: str | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    try: return plan_response(db, WeeklyTaskPlanningService().generate(db, user.id, goal_id, review_id))
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
 
 
