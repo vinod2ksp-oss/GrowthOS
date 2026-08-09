@@ -6,6 +6,7 @@ from app.models.goal import StudyGoal
 from app.models.growth import AttributeChangeLog, GoalRequirement, GrowthEvidence, TaskOutcomeLink, WeeklyReview
 from app.models.profile import UserProfile
 from app.models.task import LearningSession, Task, TaskEvaluation
+from app.models.resource import ResourceFavorite, ResourceInteraction, ResourceProduct
 from app.services.goal_gap_analysis_service import GoalGapAnalysisService
 
 
@@ -36,7 +37,11 @@ class WeeklyReviewService:
         if delayed: risks.append(f"存在 {delayed} 个延期或放弃任务。")
         if budget_seconds and effective > budget_seconds * 1.2: risks.append("实际投入超过已确认时间预算，需检查下周负荷。")
         unresolved = [gap["title"] for gap in gaps if gap["gap_level"] in {"unknown", "moderate", "major"}]
-        summary = {"main_progress": "信息不完整" if progress["progress_value"] is None else f"{progress['progress_value']:.0%}", "major_progress": [f"新增 {len(outcomes)} 项可追溯成果"] if outcomes else [], "risks": risks, "unresolved_gaps": unresolved, "next_week_suggestions": ["优先处理延期任务"] if delayed else ["保持与当前时间预算一致的任务规模"], "attribute_change_count": len(changes), "confidence_change": sum(change.new_confidence - change.previous_confidence for change in changes), "available_minutes": budget_seconds // 60}
+        used_resources = db.execute(select(ResourceInteraction).where(ResourceInteraction.user_id == user_id, ResourceInteraction.interaction_type == "used_for_task", ResourceInteraction.created_at >= start_dt, ResourceInteraction.created_at < end_dt)).scalars().all()
+        used_resource_ids = {row.resource_id for row in used_resources}
+        used_names = list(db.execute(select(ResourceProduct.name).where(ResourceProduct.id.in_(used_resource_ids))).scalars()) if used_resource_ids else []
+        unused_favorites = list(db.execute(select(ResourceProduct.name).join(ResourceFavorite, ResourceFavorite.resource_id == ResourceProduct.id).where(ResourceFavorite.user_id == user_id, ResourceProduct.id.not_in(used_resource_ids))).scalars())
+        summary = {"main_progress": "信息不完整" if progress["progress_value"] is None else f"{progress['progress_value']:.0%}", "major_progress": [f"新增 {len(outcomes)} 项可追溯成果"] if outcomes else [], "risks": risks, "unresolved_gaps": unresolved, "next_week_suggestions": ["优先处理延期任务"] if delayed else ["保持与当前时间预算一致的任务规模"], "attribute_change_count": len(changes), "confidence_change": sum(change.new_confidence - change.previous_confidence for change in changes), "available_minutes": budget_seconds // 60, "used_resources": used_names, "resources_linked_to_completed_tasks": sum(row.task_completed_at_interaction is True for row in used_resources), "unused_favorite_resources": unused_favorites}
         prior_items = db.scalar(select(func.count(GrowthEvidence.id)).where(GrowthEvidence.user_id == user_id, GrowthEvidence.created_at >= start_dt, GrowthEvidence.created_at < end_dt)) or 0
         review = WeeklyReview(user_id=user_id, goal_id=goal_id, period_start=period_start, period_end=period_end, effective_study_seconds=effective, pause_seconds=paused, completed_task_count=completed, effective_task_count=valid, partial_task_count=partial, delayed_abandoned_count=delayed, new_item_count=prior_items + 1, progress_json=progress, summary_json=summary)
         db.add(review); db.flush()

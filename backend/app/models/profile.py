@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import String, DateTime, Integer, ForeignKey, Text
+from sqlalchemy import String, DateTime, Integer, ForeignKey, Text, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -20,6 +20,7 @@ class UserProfile(Base):
     auxiliary_direction: Mapped[str | None] = mapped_column(String(160), nullable=True)
     weekly_study_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     display_mode: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    resource_budget: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 

@@ -26,6 +26,9 @@ type Review = {
     unresolved_gaps: string[];
     next_week_suggestions: string[];
     confidence_change: number;
+    used_resources?: string[];
+    resources_linked_to_completed_tasks?: number;
+    unused_favorite_resources?: string[];
   };
 };
 export default function Reviews() {
@@ -161,6 +164,9 @@ export default function Reviews() {
           <p>
             下周建议：{selected.summary_json.next_week_suggestions.join("；")}
           </p>
+          <p>本周使用资源：{selected.summary_json.used_resources?.join("、") || "无记录"}</p>
+          <p>关联已完成任务：{selected.summary_json.resources_linked_to_completed_tasks || 0} 项</p>
+          <p>收藏但未使用：{selected.summary_json.unused_favorite_resources?.join("、") || "无"}</p>
           <button className="mt-3 border px-4 py-2" onClick={adjust}>
             生成路径调整预览
           </button>

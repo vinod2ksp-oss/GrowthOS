@@ -1,5 +1,11 @@
 from app.main import app
 from app.services.ai_service import AIService, LLMResult, get_ai_service
+from fastapi import Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from app.db.session import get_db
+from app.models.user import User
 
 
 class E2EFakeProvider:
@@ -29,3 +35,16 @@ class E2EFakeProvider:
 
 
 app.dependency_overrides[get_ai_service] = lambda: AIService(E2EFakeProvider())
+
+
+class TestPromotion(BaseModel):
+    email: str
+
+
+@app.post("/api/v1/test/promote-admin", include_in_schema=False)
+def promote_test_admin(payload: TestPromotion, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(404, "test user not found")
+    user.role = "admin"; db.commit()
+    return {"role": "admin"}

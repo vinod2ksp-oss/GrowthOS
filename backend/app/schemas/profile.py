@@ -10,6 +10,7 @@ class ProfileCreate(BaseModel):
     auxiliary_direction: str | None = None
     weekly_study_hours: int | None = Field(default=None, ge=0)
     display_mode: str | None = None
+    resource_budget: float | None = Field(default=None, ge=0)
 
 
 class ProfileRead(ProfileCreate):

@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 test('user imports and confirms evidence then creates a seven-day plan', async ({ page }) => {
   const email = `phase2-${Date.now()}@example.com`;
   await page.goto('/register');
+  await page.waitForLoadState('networkidle');
   await page.getByPlaceholder('邮箱').fill(email);
   await page.getByPlaceholder('密码').fill('secret123');
   await page.getByRole('button', { name: '注册' }).click();

@@ -14,6 +14,7 @@ const emptyProfile: Profile = {
   auxiliary_direction: '',
   weekly_study_hours: 0,
   display_mode: '',
+  resource_budget: undefined,
 };
 
 export default function ProfilePage() {
@@ -47,6 +48,7 @@ export default function ProfilePage() {
           auxiliary_direction: form.auxiliary_direction,
           weekly_study_hours: form.weekly_study_hours,
           display_mode: form.display_mode,
+          resource_budget: form.resource_budget,
         }),
       });
       setMessage('档案已保存');
@@ -70,6 +72,7 @@ export default function ProfilePage() {
           <input className="rounded border px-3 py-2" placeholder="辅助方向" value={form.auxiliary_direction || ''} onChange={(e) => setForm({ ...form, auxiliary_direction: e.target.value })} />
           <input className="rounded border px-3 py-2" placeholder="每周可学习时间" value={form.weekly_study_hours ?? ''} onChange={(e) => setForm({ ...form, weekly_study_hours: Number(e.target.value) })} />
           <input className="rounded border px-3 py-2" placeholder="显示模式" value={form.display_mode || ''} onChange={(e) => setForm({ ...form, display_mode: e.target.value })} />
+          <input className="rounded border px-3 py-2" type="number" min="0" placeholder="学习资源预算" value={form.resource_budget ?? ''} onChange={(e) => setForm({ ...form, resource_budget: e.target.value ? Number(e.target.value) : null })} />
           <button className="rounded bg-slate-900 px-4 py-2 text-white md:col-span-2">保存档案</button>
         </form>
       </div>
