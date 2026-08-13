@@ -20,7 +20,7 @@ GrowthOS 面向本科生考研场景，提供用户档案、考研目标、任�
 ## Windows 启动命令
 
 ```powershell
-cd d:\论文写作\demo\Grouth
+cd d:\Grouth
 copy backend\.env.example backend\.env
 docker compose up -d postgres
 cd backend
@@ -49,7 +49,7 @@ npm run dev
 管理员不能通过公开注册接口创建。先正常注册账号并完成数据库迁移，然后在后端目录使用项目虚拟环境执行：
 
 ```powershell
-& 'D:\论文写作\demo\GROUTH\.venv\Scripts\python.exe' -m app.cli.set_admin user@example.com
+& 'D:\GROUTH\.venv\Scripts\python.exe' -m app.cli.set_admin user@example.com
 ```
 
 命令只会提升已存在的精确邮箱账号；资源数据库初始为空，不包含预置商品。
